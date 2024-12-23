@@ -92,4 +92,4 @@ The application reads settings (e.g., server port) from a `configuration.propert
 ## **References**
 - Java Socket Programming [Oracle Documentation](https://docs.oracle.com/javase/tutorial/networking/sockets/index.html)
 - Multithreading in Java [Baeldung](https://www.baeldung.com/java-multithreading)
-- Console Color and Loading Meter Output(ConsoleColor, ConsolePrint & ConsoleLoadingMeter): Taken from Dr.John Healy
+- Console Color and Loading Meter Output(ConsoleColor, ConsolePrint & ConsoleLoadingMeter): Taken from Dr. John Healy
