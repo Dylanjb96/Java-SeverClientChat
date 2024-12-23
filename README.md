@@ -92,4 +92,5 @@ The application reads settings (e.g., server port) from a `configuration.propert
 ## **References**
 - Java Socket Programming [Oracle Documentation](https://docs.oracle.com/javase/tutorial/networking/sockets/index.html)
 - Multithreading in Java [GeekforGeeks](https://www.geeksforgeeks.org/multi-threaded-chat-application-set-1/)
+- Java Socket Programming - Multiple Clients Chat (How to create)[YouTube](https://www.youtube.com/watch?v=gLfuZrrfKes)
 - Console Color and Loading Meter Output(ConsoleColor, ConsolePrint & ConsoleLoadingMeter): Taken from Dr. John Healy
