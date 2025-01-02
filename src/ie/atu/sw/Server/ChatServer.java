@@ -23,10 +23,12 @@ import ie.atu.sw.ConsoleDesign.ConsoleLoadingMeter;
 import ie.atu.sw.ConsoleDesign.ConsolePrint;
 
 /**
- * ChatServer class that initializes and manages a multi-threaded chat server.
- * It listens for client connections on a specified port and handles them using
- * ChatClientHandler instances.
+ * ChatServer class responsible for managing a multi-threaded chat server.
+ * This server listens for incoming client connections on a designated port
+ * and delegates the handling of each client to a separate ChatClientHandler
+ * thread.
  */
+
 public class ChatServer {
     private static final Set<ClientHandler> connectedClients = Collections.synchronizedSet(new HashSet<>());
     private static final ExecutorService clientHandlerThreadPool = Executors.newFixedThreadPool(4);
@@ -35,18 +37,16 @@ public class ChatServer {
     private static final int MAXIMUM_CLIENTS = 4; // Maximum number of clients
 
     /**
-     * Main method to start the chat server.
-     * It loads server configuration, initialises the server socket, and starts
-     * listening for
-     * client connections.
-     *
-     * @param args Command line arguments, optionally containing the server port.
+     * Entry point for launching the chat server application.
+     * Configures the server, initializes the server socket, and begins
+     * accepting client connections.
      */
     public static void main(String[] args) {
-        // Load server configuration from properties file
+        // Load server settings from the configuration properties file
         initializeConfiguration();
 
-        // Override server port if provided via command line arguments
+        // Use the server port from command line arguments if specified, overriding
+        // default settings
         if (args.length > 0) {
             try {
                 serverPort = Integer.parseInt(args[0]);
@@ -65,8 +65,9 @@ public class ChatServer {
     }
 
     /**
-     * Loads the server configuration from a properties file.
-     * It sets the server port based on the configuration or uses a default value.
+     * Reads and applies the server configuration from a properties file.
+     * Sets the server port from the configuration file or defaults to a predefined
+     * value.
      */
     private static void initializeConfiguration() {
         Properties properties = new Properties();
@@ -112,14 +113,16 @@ public class ChatServer {
     }
 
     /**
-     * Initialises and returns the server socket for the chat server.
-     * This method also displays server startup messages.
+     * Creates and initializes the server socket for the chat server.
+     * Displays startup messages to indicate successful initialization.
      *
-     * @return The initialised ServerSocket.
-     * @throws IOException          If an error occurs during server socket
-     *                              initialization.
-     * @throws InterruptedException If the thread is interrupted while waiting.
+     * @return The initialized ServerSocket instance.
+     * @throws IOException          If an error occurs during the initialization of
+     *                              the server socket.
+     * @throws InterruptedException If the thread is interrupted during the
+     *                              initialization process.
      */
+
     private static ServerSocket startServer() throws IOException, InterruptedException {
         System.out.println(ConsoleColor.ORANGE_BOLD + "Chat Server is initializing..." + ConsoleColor.RESET);
 
@@ -129,7 +132,9 @@ public class ChatServer {
             ConsoleLoadingMeter.printProgress(i, totalSteps);
         }
 
-        ServerSocket serverSocket = new ServerSocket(serverPort); // No IP address specified, defaults to localhost
+        ServerSocket serverSocket = new ServerSocket(serverPort); // If no IP address is specified, default to using
+                                                                  // localhost
+
         System.out.println(ConsoleColor.GREEN_BOLD + "Server is running on port " + ConsoleColor.RESET
                 + ConsoleColor.ORANGE_BOLD + serverPort + ConsoleColor.RESET);
         System.out.println(
@@ -138,13 +143,14 @@ public class ChatServer {
     }
 
     /**
-     * Accepts incoming client connections and handles them using ChatClientHandler
-     * instances.
-     * Continuously listens for new client connections as long as the server is
-     * running.
+     * Continuously listens for and accepts incoming client connections.
+     * Each connection is handled by a dedicated ChatClientHandler instance.
+     * This process runs as long as the server remains active.
      *
-     * @param serverSocket The server socket to listen on for incoming connections.
+     * @param serverSocket The ServerSocket instance used to accept incoming
+     *                     connections.
      */
+
     private static void confirmingClientConnections(ServerSocket serverSocket) {
         while (isServerActive) {
             try {
@@ -178,6 +184,14 @@ public class ChatServer {
         }
     }
 
+    /**
+     * Broadcasts a message to all connected clients.
+     * The message is timestamped with the current server time before being sent.
+     * Uses a synchronized block to ensure thread-safe access to the list of
+     * connected clients.
+     *
+     * @param message The message to broadcast to all connected clients.
+     */
     public void broadcastMessage(String message) {
         String timestampedMessage = "[" + getPresentTime() + "] " + message;
         synchronized (connectedClients) {
@@ -187,16 +201,23 @@ public class ChatServer {
         }
     }
 
+    /**
+     * Retrieves the current server time formatted as a string.
+     * The time is formatted in the "HH:mm:ss" pattern (e.g., "14:30:15").
+     *
+     * @return A string representation of the current time.
+     */
     private static String getPresentTime() {
         return LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
     }
 
     /**
-     * Starts a separate thread that listens for a shutdown command in the console.
-     * When '\q' is entered, it starts the shutdown of the server.
+     * Launches a separate thread to monitor the console for a shutdown command.
+     * Entering '\q' triggers the server shutdown process.
      *
-     * @param serverSocket The server socket to close upon shutdown.
+     * @param serverSocket The ServerSocket instance to close during shutdown.
      */
+
     private static void initiateServerShutdown(ServerSocket serverSocket) {
         new Thread(() -> {
             try (Scanner scanner = new Scanner(System.in)) {
@@ -210,13 +231,14 @@ public class ChatServer {
     }
 
     /**
-     * Shuts down the chat server, closing all client connections and the server
-     * socket.
-     * Releases all resources associated with the server.
+     * Gracefully shuts down the chat server by closing all client connections
+     * and the server socket. Ensures that all resources associated with the
+     * server are released.
      *
-     * @param serverSocket The server socket to close during the shutdown.
+     * @param serverSocket The ServerSocket instance to be closed during shutdown.
      * @throws IOException If an error occurs while closing the server socket.
      */
+
     private static void closeServer(ServerSocket serverSocket) {
         try {
             isServerActive = false; // Stop the server loop

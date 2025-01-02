@@ -13,27 +13,34 @@ import ie.atu.sw.ConsoleDesign.ConsoleColor;
 import ie.atu.sw.ConsoleDesign.ConsolePrint;
 
 /**
- * The ChatClientHandler class manages the communication with an individual chat
- * client.
- * It handles incoming messages from the client and broadcasts them to other
- * clients.
+ * The ChatClientHandler class manages communication with a single chat client.
+ * It is responsible for receiving messages from the client, processing them,
+ * and broadcasting them to all other connected clients. Each client connection
+ * is handled by a separate instance of this class, running in its own thread.
  */
+
 public class ClientHandler implements Runnable {
     private final Socket userSocket;
     private final String username;
     private final BufferedReader userInputReader;
     private final BufferedWriter userOutputWriter;
-    // ConcurrentHashMap to hold active client handlers
+    // A ConcurrentHashMap to store active client handlers, allowing thread-safe
+    // access and management of connected clients.
     private static final ConcurrentHashMap<String, ClientHandler> clientHandlers = new ConcurrentHashMap<>();
     private static volatile boolean isServerClosing = false;
 
     /**
-     * Constructor for ChatClientHandler.
-     * Initialises the client socket and sets up input/output streams.
+     * Constructs a ChatClientHandler instance for managing communication with a
+     * client.
+     * Initializes the client socket and sets up the necessary input and output
+     * streams
+     * for data exchange.
      *
-     * @param socket The socket connected to the client.
-     * @throws IOException If an I/O error occurs while setting up streams.
+     * @param socket The socket representing the connection to the client.
+     * @throws IOException If an error occurs while initializing the input/output
+     *                     streams.
      */
+
     public ClientHandler(Socket socket) throws IOException {
         this.userSocket = socket;
         this.userInputReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -47,10 +54,12 @@ public class ClientHandler implements Runnable {
     }
 
     /**
-     * Main run method for the thread.
-     * Continuously listens for client messages and broadcasts them to other
-     * clients.
+     * The main execution method for the client handler thread.
+     * Continuously listens for incoming messages from the client and broadcasts
+     * them to all other connected clients. Handles client disconnection and
+     * resource cleanup when the client disconnects or an error occurs.
      */
+
     @Override
     public void run() {
         String message;
@@ -83,6 +92,22 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    /**
+     * Handles the disconnection of a client from the chat server.
+     * Ensures that all resources associated with the client are released,
+     * notifies other clients about the disconnection, and removes the client
+     * from the list of active handlers.
+     * 
+     * The method performs the following steps:
+     * - Releases the input/output streams and the socket associated with the
+     * client.
+     * - Sends a system notification to all connected clients indicating that the
+     * user has left.
+     * - Removes the client from the synchronized list of active client handlers.
+     * 
+     * Any errors encountered during the disconnection process are logged for
+     * debugging purposes.
+     */
     private void handleClientDisconnection() {
         try {
             releaseResources();
@@ -97,6 +122,18 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    /**
+     * Handles the delivery of a private message from one client to another.
+     * Extracts the recipient's username and the message content from the provided
+     * string,
+     * and delivers the message to the recipient if they are currently online.
+     * Notifies the sender if the recipient is not found or if the message format is
+     * invalid.
+     *
+     * @param message The private message command containing the recipient's
+     *                username and the message content.
+     * @throws IOException If an error occurs while sending the message.
+     */
     private void handlePrivateMessage(String message) throws IOException {
         // Remove the '/pm' prefix and trim the messsage
         String content = message.substring(4).trim();
@@ -128,6 +165,11 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    /**
+     * Sends a list of all currently active users to the client.
+     * Retrieves the usernames of all connected clients from the synchronized map
+     * and formats them into a comma-separated string.
+     */
     private void sendActiveUsers() {
         synchronized (clientHandlers) {
             String activeUsers = String.join(", ", clientHandlers.keySet());
@@ -136,6 +178,12 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    /**
+     * Sends a help message to the client, listing all available commands.
+     * Provides detailed instructions for commands such as listing users, sending
+     * private messages,
+     * requesting help, and quitting the chat.
+     */
     private void sendHelp() {
         String helpMessage = ConsoleColor.CYAN_BOLD_BRIGHT + "Available Commands:" + ConsoleColor.RESET + "\n" +
                 ConsoleColor.ORANGE_BOLD + "/users" + ConsoleColor.RESET +
@@ -150,7 +198,10 @@ public class ClientHandler implements Runnable {
     }
 
     /**
-     * Notifies all client handlers of the server shutdown.
+     * Alerts all connected clients about the impending server shutdown.
+     * Sets the server's shutdown flag to true and sends a shutdown notification
+     * message to all active client handlers. This message instructs clients to
+     * disconnect from the server gracefully.
      */
     public static void alertServerShutdown() {
         isServerClosing = true;
@@ -161,9 +212,10 @@ public class ClientHandler implements Runnable {
     }
 
     /**
-     * Disconnects all connected clients.
-     * Iterates through all active client handlers and starts their disconnection
-     * process.
+     * Disconnects all currently connected clients from the server.
+     * Iterates through all active client handlers and initiates their
+     * disconnection process to ensure that all client connections are
+     * gracefully terminated.
      */
     public static void terminateAllConnections() {
         for (ClientHandler handler : clientHandlers.values()) {
@@ -172,8 +224,18 @@ public class ClientHandler implements Runnable {
     }
 
     /**
-     * Disconnects this client from the server.
-     * Sends a disconnection message to the client and closes the socket.
+     * Disconnects the client from the server.
+     * Sends a disconnection message to the client, notifying them of the server
+     * shutdown,
+     * and then closes the client's socket to release resources.
+     *
+     * The method performs the following steps:
+     * - Checks if the client's socket is open.
+     * - Sends a message to the client informing them about the disconnection and
+     * advises them to exit the chat.
+     * - Closes the client socket to terminate the connection.
+     * - Handles any potential I/O errors during the disconnection process and logs
+     * them.
      */
     private void terminateConnection() {
         try {
@@ -191,10 +253,19 @@ public class ClientHandler implements Runnable {
     }
 
     /**
-     * Broadcasts a given message to all connected clients.
-     * The message is sent to each client connected to the server.
+     * Broadcasts a message to all connected clients.
+     * Sends the provided message to each active client, ensuring that the sender
+     * receives a personalized message prefixed with "Me:" to indicate that they
+     * sent it. Handles any errors that occur during the message delivery process.
      *
-     * @param message The message to be broadcast.
+     * The method performs the following:
+     * - Iterates through all connected client handlers.
+     * - If the client is the sender, modifies the message to prefix "Me: ".
+     * - Sends the message to each client through their respective output writer.
+     * - If an error occurs while sending, logs the error and releases the client's
+     * resources.
+     *
+     * @param message The message to broadcast to all connected clients.
      */
     private void sendToAllClients(String message) {
         for (ClientHandler clientHandler : clientHandlers.values()) {
@@ -221,28 +292,47 @@ public class ClientHandler implements Runnable {
     }
 
     /**
-     * Broadcasts a system message to all connected clients.
+     * Broadcasts a chat message to all connected clients, except for the user
+     * who triggered the notification. This ensures that the chat message, such
+     * as a user joining or leaving, is shared appropriately without redundancy.
+     * 
+     * The method performs the following:
+     * - Checks if the server is not in the process of shutting down.
+     * - Iterates through all active client handlers.
+     * - Sends the system message to each client except the one associated with this
+     * handler.
+     * - Formats the message with a "[CHAT]" prefix and styles it using console
+     * colors.
      *
-     * @param systemMessage The system message to be broadcast.
+     * @param chatMessage The chat message to be broadcast to all connected
+     *                    clients.
      */
-    private void sendSystemNotification(String systemMessage) {
+    private void sendSystemNotification(String chatMessage) {
         if (!isServerClosing) {
             for (ClientHandler clientHandler : clientHandlers.values()) {
                 if (this != clientHandler) { // Avoid sending the message to the user who just joined
                     clientHandler
                             .deliverMessageToClient(
-                                    ConsoleColor.ORANGE_BOLD + "[CHAT]: " + ConsoleColor.RESET + systemMessage);
+                                    ConsoleColor.ORANGE_BOLD + "[CHAT]: " + ConsoleColor.RESET + chatMessage);
                 }
             }
         }
     }
 
     /**
-     * Sends a message to the connected client.
-     * Writes the message to the client's output stream and flushes it to ensure
-     * delivery.
-     * If an IOException occurs during sending, it closes the resources associated
-     * with this client.
+     * Sends a message directly to the connected client.
+     * This method writes the given message to the client's output stream and
+     * flushes
+     * it to ensure immediate delivery. If an IOException occurs during the process,
+     * it handles the exception by logging the error and releasing all resources
+     * associated with the client to prevent further issues.
+     *
+     * The method performs the following:
+     * - Checks if the client's socket is still open.
+     * - Writes the message to the output stream, appends a newline, and flushes the
+     * stream.
+     * - Logs any IOException that occurs and cleans up resources associated with
+     * the client.
      *
      * @param message The message to be sent to the client.
      */
@@ -260,9 +350,20 @@ public class ClientHandler implements Runnable {
     }
 
     /**
-     * Closes resources associated with this client handler.
-     * Ensures that the input reader, output writer, and client socket are closed
-     * properly.
+     * Releases all resources associated with this client handler to ensure a
+     * clean disconnection. This method properly closes the input reader, output
+     * writer, and client socket, handling any exceptions during the process.
+     * 
+     * Additionally, it removes the client from the synchronized list of active
+     * client handlers and logs the disconnection, including the client’s username
+     * and socket information. Afterward, it updates the list of active users.
+     *
+     * The method performs the following:
+     * - Closes the input reader, output writer, and socket, if they are not null.
+     * - Catches and logs any IOException that occurs during resource cleanup.
+     * - Synchronizes access to the `clientHandlers` map to remove the client
+     * safely.
+     * - Logs the disconnection event and displays the updated list of active users.
      */
     private void releaseResources() {
         try {
@@ -286,10 +387,33 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    /**
+     * Generates a timestamp representing the current time.
+     * The timestamp is formatted in the "HH:mm:ss" pattern (e.g., "[14:30:15]")
+     * to provide a consistent and human-readable format for logging or displaying
+     * events in the chat server.
+     *
+     * @return A string representation of the current time enclosed in square
+     *         brackets.
+     */
     private static String getCurrentTimestamp() {
         return "[" + java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss")) + "]";
     }
 
+    /**
+     * Prints a list of all currently connected users to the server console.
+     * If no users are connected, it displays a message indicating that there are
+     * no active users. Otherwise, it iterates through the list of connected users
+     * and displays their usernames in a formatted style.
+     *
+     * The method performs the following:
+     * - Checks if the `clientHandlers` map is empty. If so, prints a message
+     * indicating no active users.
+     * - If there are active users, synchronizes access to the `clientHandlers` map
+     * to ensure thread safety.
+     * - Iterates through the map keys (usernames) and prints each username in a
+     * formatted style.
+     */
     private void printActiveUsers() {
         if (clientHandlers.isEmpty()) {
             System.out.println(ConsoleColor.ORANGE_BOLD + "No active users." + ConsoleColor.RESET);

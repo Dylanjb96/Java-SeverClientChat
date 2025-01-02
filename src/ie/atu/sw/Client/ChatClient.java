@@ -17,22 +17,61 @@ import ie.atu.sw.ConsoleDesign.ConsoleLoadingMeter;
 import ie.atu.sw.ConsoleDesign.ConsolePrint;
 
 /**
- * The ChatClient connects to the chat server, allowing user to communicate with
- * others
- * and send private messages.
+ * The ChatClient class represents a client that connects to the chat server.
+ * It enables users to participate in a chat session, communicate with other
+ * connected users, and send private messages to specific users. The client
+ * manages the connection to the server, handles incoming messages, and provides
+ * an interface for sending messages.
+ *
+ * Key Features:
+ * - Connects to a designated chat server.
+ * - Receives and displays messages from the server, including system
+ * notifications.
+ * - Supports sending public and private messages.
+ * - Handles disconnection and cleanup upon exit.
  */
+
 public class ChatClient {
     private static String serverIP = "127.0.0.1"; // defualt server ip address
     private static int serverConnectionPort = 65534; // default server port
     private static final int RECONNECT_DELAY_MS = 5000; // Delay between reconnection attempts
 
     /**
-     * The main method to start the chat client.
-     * It loads configuration, establishes a connection, and handles user input and
-     * server messages.
+     * The main method serves as the entry point for the ChatClient application.
+     * It facilitates the client-side functionality of connecting to a chat server,
+     * interacting with other users, and managing user input and server messages.
      *
-     * @param args Command line arguments which may contain server address and port.
+     * Key Responsibilities:
+     * - Loads configuration and sets up a connection to the chat server.
+     * - Allows users to specify the server's IP address and port, with defaults
+     * available.
+     * - Establishes a connection to the server, retries if the connection fails,
+     * and handles
+     * errors gracefully.
+     * - Starts a background thread to listen for and display messages from the
+     * server.
+     * - Processes user input for sending messages or commands to the server.
+     * - Ensures proper cleanup of resources, including closing sockets,
+     * input/output streams,
+     * and the scanner.
+     *
+     * The method performs the following steps:
+     * 1. Displays a welcome message and prompts the user for server details (IP
+     * address and port).
+     * 2. Attempts to connect to the server, with a progress indicator for user
+     * feedback.
+     * 3. If connected:
+     * - Starts a thread to listen for server messages.
+     * - Allows the user to input messages, which are sent to the server.
+     * - Waits for the listener thread to finish before exiting.
+     * 4. Handles disconnections and retries if the connection fails.
+     * 5. Logs messages to the console for important events like errors, connection
+     * status, and exit notifications.
+     *
+     * @param args Command-line arguments, which may include the server address and
+     *             port.
      */
+
     public static void main(String[] args) {
         try (Scanner scanner = new Scanner(System.in)) {
             boolean connected = false;
@@ -111,26 +150,62 @@ public class ChatClient {
     }
 
     /**
-     * Establishes a connection to the chat server, retries if necessary.
+     * Establishes a connection to the chat server using the specified server
+     * address and port.
+     * This method attempts to create a socket connection to the server. If the
+     * connection
+     * fails, the exception is propagated for handling by the caller.
      *
-     * @return A connected socket to the server.
-     * @throws IOException If unable to connect after several attempts.
+     * Key Responsibilities:
+     * - Uses the provided server address and port to establish a socket connection.
+     * - Returns the connected socket for further communication with the server.
+     * - Throws an IOException if the connection cannot be established.
+     *
+     * @param serverAddress The IP address or hostname of the server.
+     * @param serverPort    The port number on which the server is listening.
+     * @return A connected Socket instance for communicating with the server.
+     * @throws IOException If an error occurs during the connection attempt.
      */
     private static Socket publishConnection(String serverAddress, int serverPort) throws IOException {
         return new Socket(serverAddress, serverPort);
     }
 
+    /**
+     * Retrieves the current time formatted as a string.
+     * The time is obtained from the system's local clock and formatted in the
+     * "HH:mm:ss" pattern (e.g., "14:30:15") for consistent and human-readable
+     * representation.
+     *
+     * @return A string representation of the current time in "HH:mm:ss" format.
+     */
     private static String getPresentTime() {
         return LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
     }
 
     /**
-     * Handles user input, sending messages to the server.
-     * It reads user input from the console and sends it to the server.
+     * Handles user input and sends messages to the server.
+     * This method reads user input from the console and transmits it to the server
+     * using the provided BufferedWriter. It supports sending standard messages,
+     * private messages, and commands. The user can quit the chat by typing '\q'.
      *
-     * @param scanner             A Scanner object for reading user input.
-     * @param clientMessageWriter A BufferedWriter to send messages to the server.
-     * @throws IOException If an I/O error occurs.
+     * Key Responsibilities:
+     * - Prompts the user to enter a username or generates a random username if none
+     * is provided.
+     * - Sends the username to the server for identification.
+     * - Displays instructions for using the chat interface.
+     * - Reads user input continuously, formats the input with a timestamp for
+     * standard messages,
+     * and sends it to the server.
+     * - Handles private messages and commands differently, sending them directly
+     * without timestamps.
+     * - Allows the user to quit the chat by typing '\q' and closes resources upon
+     * exit.
+     *
+     * @param scanner             A Scanner object for reading user input from the
+     *                            console.
+     * @param clientMessageWriter A BufferedWriter for sending messages to the
+     *                            server.
+     * @throws IOException If an I/O error occurs while writing to the server.
      */
     private static void processClientInput(Scanner scanner, BufferedWriter clientMessageWriter) throws IOException {
         System.out
@@ -175,7 +250,24 @@ public class ChatClient {
         closeResourceQuietly(clientMessageWriter);
     }
 
-    // Helper method to generate a random username
+    /**
+     * Helper method to generate a random username.
+     * This method creates a unique and fun username by combining a randomly
+     * selected adjective and noun from predefined arrays, followed by a
+     * randomly generated number. The resulting username is intended to provide
+     * variety and ensure uniqueness.
+     *
+     * Key Steps:
+     * - Randomly selects an adjective from the predefined `adjectives` array.
+     * - Randomly selects a noun from the predefined `nouns` array.
+     * - Appends a random integer (0-999) to the adjective-noun combination to
+     * ensure uniqueness.
+     *
+     * Example:
+     * - Output: "HappyWolf527", "CoolTiger123"
+     *
+     * @return A randomly generated username as a String.
+     */
     private static String generateRandomUsername() {
         String[] adjectives = { "Happy", "Cool", "Bright", "Calm", "Fast", "Rude", "Unlucky", "Lucky" };
         String[] nouns = { "Shark", "Tiger", "Wolf", "Hawk", "Bunny" };
@@ -190,10 +282,21 @@ public class ChatClient {
 
     /**
      * Listens for messages from the server and displays them to the user.
-     * It continuously reads messages from the server and prints them to the
-     * console.
+     * This method runs in a loop, continuously reading messages from the server
+     * using a BufferedReader and printing them to the console. It handles special
+     * server messages, such as when the server is full, and attempts to reconnect
+     * if disconnected.
      *
-     * @param serverInput A BufferedReader to read messages from the server.
+     * Key Responsibilities:
+     * - Reads messages from the server until the connection is closed or an error
+     * occurs.
+     * - Prints each received message to the console.
+     * - Checks for specific server messages (e.g., "Server is full") and performs
+     * appropriate actions, such as exiting the application.
+     * - Logs and handles disconnection scenarios by attempting to reconnect.
+     *
+     * @param serverMessageReader A BufferedReader for reading messages from the
+     *                            server.
      */
     private static void readServerMessages(BufferedReader serverMessageReader) {
         try {
@@ -214,7 +317,37 @@ public class ChatClient {
 
     /**
      * Attempts to reconnect to the server after a disconnection.
-     * Provides the user with an option to retry and handles multiple attempts.
+     * This method provides the user with the option to retry reconnecting to the
+     * server
+     * and handles multiple reconnection attempts with a delay between retries. If
+     * the
+     * user opts not to reconnect or the maximum number of retries is reached, the
+     * application exits gracefully.
+     *
+     * Key Responsibilities:
+     * - Informs the user about the disconnection and asks if they want to
+     * reconnect.
+     * - Handles up to a maximum number of retry attempts with a delay between
+     * attempts.
+     * - Establishes a new connection to the server if a retry is successful.
+     * - Restarts the input and message listening processes upon successful
+     * reconnection.
+     * - Handles errors during reconnection attempts and logs them to the console.
+     * - Exits the application if the user opts out of reconnecting or if retries
+     * fail.
+     *
+     * The method performs the following steps:
+     * 1. Prompts the user for a decision to reconnect.
+     * 2. If the user opts to reconnect:
+     * - Attempts to reconnect to the server, retrying up to `MAXIMUM_RETRIES`
+     * times.
+     * - Prints progress and logs any errors encountered during retries.
+     * - If successful, re-establishes the input and listener processes.
+     * 3. If the user opts not to reconnect or retries fail:
+     * - Exits the application with a farewell message.
+     *
+     * @throws InterruptedException If the thread is interrupted during a sleep
+     *                              delay.
      */
     public static void attemptToReconnectServer() {
         Scanner scanner = new Scanner(System.in);
@@ -277,10 +410,18 @@ public class ChatClient {
     }
 
     /**
-     * Safely closes a resource, handling any IOException that might occur.
-     * This method is used to close resources like streams and sockets.
+     * Safely closes a resource, ensuring that any IOException encountered
+     * during the closing process is caught and logged without interrupting
+     * the program's flow. This method is commonly used to release resources
+     * such as streams and sockets gracefully.
      *
-     * @param resource The resource to close.
+     * Key Responsibilities:
+     * - Checks if the provided resource is non-null before attempting to close it.
+     * - Calls the `close` method on the resource.
+     * - Logs an error message if an IOException occurs during the closing process.
+     *
+     * @param resource The resource to close. It must implement the `Closeable`
+     *                 interface.
      */
     private static void closeResourceQuietly(Closeable resource) {
         if (resource != null) {
